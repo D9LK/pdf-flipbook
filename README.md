@@ -60,8 +60,8 @@ Notes:
 
 ### CDN (after publishing a release tag)
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/<user>/<repo>@<tag>/dist/flipbook.css">
-<script src="https://cdn.jsdelivr.net/gh/<user>/<repo>@<tag>/dist/flipbook.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/D9LK/pdf-flipbook@v1.0.0/dist/flipbook.css">
+<script src="https://cdn.jsdelivr.net/gh/D9LK/pdf-flipbook@v1.0.0/dist/flipbook.js"></script>
 ```
 
 ### Requirements & compatibility
