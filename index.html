@@ -14,7 +14,9 @@
     <div id="myFlipbook" style="height:100dvh"></div>
     <script src="./dist/flipbook.js"></script>
     <script>
-      Flipbook.mount({ target: '#myFlipbook', pdfUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf' });
+      const fb = Flipbook.mount({ target: '#myFlipbook', pdfUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf', breakpoint: 820 });
+      fb.singleMode();
+      window.fb = fb;
     </script>
   </body>
   </html>
