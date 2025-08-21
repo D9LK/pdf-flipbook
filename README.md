@@ -14,9 +14,9 @@ Vanilla JS flipbook viewer for PDFs (powered by pdf.js). It supports a single-pa
 
 ### Quick start (CDN)
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/D9LK/pdf-flipbook@v1.0.0/dist/flipbook.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/D9LK/pdf-flipbook@v1.1.0/dist/flipbook.css">
 <div id="flip" style="height:100dvh"></div>
-<script src="https://cdn.jsdelivr.net/gh/D9LK/pdf-flipbook@v1.0.0/dist/flipbook.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/D9LK/pdf-flipbook@v1.1.0/dist/flipbook.js"></script>
 <script>
   const fb = Flipbook.mount({
     target: '#flip',
@@ -39,13 +39,13 @@ Vanilla JS flipbook viewer for PDFs (powered by pdf.js). It supports a single-pa
 ### Using your own pdf.js (optional)
 Flipbook.js auto-loads pdf.js 3.10.x from a CDN when `window.pdfjsLib` is not present. If you prefer to pin/control pdf.js yourself:
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/D9LK/pdf-flipbook@v1.0.0/dist/flipbook.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/D9LK/pdf-flipbook@v1.1.0/dist/flipbook.css">
 <div id="flip" style="height:100dvh"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.111/pdf.min.js"></script>
 <script>
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.111/pdf.worker.min.js';
 </script>
-<script src="https://cdn.jsdelivr.net/gh/D9LK/pdf-flipbook@v1.0.0/dist/flipbook.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/D9LK/pdf-flipbook@v1.1.0/dist/flipbook.js"></script>
 <script>
   Flipbook.mount({ target: '#flip', pdfUrl: 'https://example.com/file.pdf' });
 </script>
