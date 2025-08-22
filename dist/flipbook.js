@@ -7,7 +7,7 @@
   function create(base) {
     const root = document.createElement('div');
     root.className = 'flipbook';
-    root.innerHTML = '<div class="flipbook-stage"><div class="flipbook-wrapper"><div class="flipbook-book"><div class="flipbook-spread"><div class="flipbook-page left"><canvas></canvas></div><div class="flipbook-page right"><canvas></canvas></div></div><div class="flipbook-turn hidden"><div class="flipbook-turn-shadow"></div><canvas></canvas></div><button class="flipbook-nav left" aria-label="Previous">◀</button><button class="flipbook-nav right" aria-label="Next">▶</button><button class="flipbook-fullscreen" aria-label="Toggle Fullscreen">⤢</button></div></div></div>';
+    root.innerHTML = '<div class="flipbook-stage"><div class="flipbook-wrapper"><div class="flipbook-book"><div class="flipbook-spread"><div class="flipbook-page left"><canvas></canvas></div><div class="flipbook-page right"><canvas></canvas></div></div><div class="flipbook-turn hidden"><div class="flipbook-turn-shadow"></div><canvas></canvas></div><button class="flipbook-nav left" aria-label="Previous"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="flipbook-nav right" aria-label="Next"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="flipbook-fullscreen" aria-label="Toggle Fullscreen">⤢</button><div class="flipbook-toolbar"><button class="flipbook-tool prev" aria-label="Previous"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="flipbook-page-indicator"></div><button class="flipbook-tool next" aria-label="Next"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><button class="flipbook-toolbar-hint" aria-label="Show controls"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div></div>';
     base.appendChild(root);
     return {
       root,
@@ -21,7 +21,12 @@
       turnCanvas: root.querySelector('.flipbook-turn canvas'),
       navLeft: root.querySelector('.flipbook-nav.left'),
       navRight: root.querySelector('.flipbook-nav.right'),
-      fsBtn: root.querySelector('.flipbook-fullscreen')
+      fsBtn: root.querySelector('.flipbook-fullscreen'),
+      toolbar: root.querySelector('.flipbook-toolbar'),
+      toolPrev: root.querySelector('.flipbook-tool.prev'),
+      toolNext: root.querySelector('.flipbook-tool.next'),
+      pageIndicator: root.querySelector('.flipbook-page-indicator'),
+      toolbarHint: root.querySelector('.flipbook-toolbar-hint')
     };
   }
 
@@ -59,21 +64,34 @@
     this.single = hasSingleOpt ? !!opts.single : (window.innerWidth < this.breakpoint);
     this.isDouble = !this.single; this.currentRight = 1;
     this.pdf = null; this.total = 0; this.cache = new Map(); this.animating = false;
+    this.iosFsActive = false; this.scrollYBeforeFs = 0;
     this.url = opts && opts.pdfUrl;
     setupPdf(() => this.load());
     this.els.navLeft.addEventListener('click', () => this.prev());
     this.els.navRight.addEventListener('click', () => this.next());
+    if (this.els.toolPrev) this.els.toolPrev.addEventListener('click', () => this.prev());
+    if (this.els.toolNext) this.els.toolNext.addEventListener('click', () => this.next());
     this.els.spread.addEventListener('click', (e) => {
       const r = this.els.spread.getBoundingClientRect();
       const x = e.clientX - r.left;
       if (x < r.width / 2) this.prev(); else this.next();
     });
-    if (this.els.fsBtn) this.els.fsBtn.addEventListener('click', () => this.toggleFullscreen());
+    this.els.spread.addEventListener('touchstart', (e) => { if (e.touches.length!==1) return; const t = e.touches[0]; this._tsx = t.clientX; this._tsy = t.clientY; });
+    this.els.spread.addEventListener('touchend', (e) => { if (this._tsx==null) return; const t = e.changedTouches[0]; const dx = t.clientX - this._tsx; const dy = t.clientY - this._tsy; const ax = Math.abs(dx), ay = Math.abs(dy); this._tsx = null; this._tsy = null; if (ax > 40 && ax > ay) { if (dx < 0) this.next(); else this.prev(); } });
+    if (this.els.fsBtn) {
+      this._fsClickGuard = false;
+      this.els.fsBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); this._fsClickGuard = true; this.toggleFullscreen(); setTimeout(() => { this._fsClickGuard = false; }, 300); });
+      this.els.fsBtn.addEventListener('click', (e) => { if (this._fsClickGuard) { e.stopPropagation(); e.preventDefault(); return; } this.toggleFullscreen(); });
+    }
     document.addEventListener('fullscreenchange', () => this.render());
+    document.addEventListener('webkitfullscreenchange', () => this.render());
     window.addEventListener('resize', () => {
       if (!this.singleOverride) this.applyResponsiveSingle();
+      this.updateVh();
       this.render();
     });
+    window.addEventListener('orientationchange', () => { this.updateVh(); this.render(); });
+    this.initToolbar();
   }
 
   Flipbook.prototype.load = async function(){
@@ -126,6 +144,7 @@
     const right = this.currentRight; const left = (this.isDouble && right>1)? right-1 : null;
     await Promise.all([ this.renderPageTo(left, this.els.leftCanvas), this.renderPageTo(right, this.els.rightCanvas) ]);
     this.updateLayout();
+    if (this.els.pageIndicator) { this.els.pageIndicator.textContent = this.currentRight + '/' + this.total; }
   };
 
   Flipbook.prototype.next = async function(){ if (this.animating) return; const t = this.isDouble? (this.currentRight===1?Math.min(3,this.total):Math.min(this.total,this.currentRight+2)) : Math.min(this.total,this.currentRight+1); if (t===this.currentRight) return; this.currentRight=t; await this.render(); };
@@ -135,9 +154,22 @@
   Flipbook.prototype.singleMode = async function(mode){ if (typeof mode === 'boolean') { this.singleOverride = true; if (this.single !== mode) { this.single = mode; this.isDouble = !this.single; } } else { this.singleOverride = false; this.applyResponsiveSingle(); } await this.render(); };
   Flipbook.prototype.setSingle = async function(single){ await this.singleMode(single); };
   Flipbook.prototype.toggleSingle = async function(){ await this.singleMode(!this.single); };
-  Flipbook.prototype.enterFullscreen = function(){ const el = this.els.root; if (document.fullscreenElement) return; if (el.requestFullscreen) el.requestFullscreen(); };
-  Flipbook.prototype.exitFullscreen = function(){ if (!document.fullscreenElement) return; if (document.exitFullscreen) document.exitFullscreen(); };
-  Flipbook.prototype.toggleFullscreen = function(){ if (document.fullscreenElement) this.exitFullscreen(); else this.enterFullscreen(); };
+  Flipbook.prototype.updateVh = function(){ if (this.iosFsActive) { const h = window.innerHeight; this.els.root.style.setProperty('--fb-vh', h + 'px'); } else { this.els.root.style.removeProperty('--fb-vh'); } };
+  Flipbook.prototype.enterFallbackFullscreen = function(){ if (this.iosFsActive) return; this.scrollYBeforeFs = window.scrollY || window.pageYOffset || 0; document.documentElement.classList.add('ios-fs-lock'); document.body.classList.add('ios-fs-lock'); this.els.root.classList.add('ios-fs'); this.iosFsActive = true; this.updateVh(); this.render(); };
+  Flipbook.prototype.exitFallbackFullscreen = function(){ if (!this.iosFsActive) return; this.els.root.classList.remove('ios-fs'); document.documentElement.classList.remove('ios-fs-lock'); document.body.classList.remove('ios-fs-lock'); this.iosFsActive = false; this.updateVh(); window.scrollTo(0, this.scrollYBeforeFs || 0); this.render(); };
+  Flipbook.prototype.isFullscreen = function(){ return !!(document.fullscreenElement || document.webkitFullscreenElement || this.iosFsActive); };
+  Flipbook.prototype.enterFullscreen = function(){ const el = this.els.root; if (document.fullscreenElement || document.webkitFullscreenElement) return; let ret; if (el.requestFullscreen) { ret = el.requestFullscreen(); } else if (el.webkitRequestFullscreen) { ret = el.webkitRequestFullscreen(); } if (ret && typeof ret.then === 'function') { ret.catch(() => this.enterFallbackFullscreen()); } else { if (!document.fullscreenElement && !document.webkitFullscreenElement) this.enterFallbackFullscreen(); } };
+  Flipbook.prototype.exitFullscreen = function(){ if (document.fullscreenElement) { if (document.exitFullscreen) document.exitFullscreen(); } else if (document.webkitFullscreenElement) { if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } else if (this.iosFsActive) { this.exitFallbackFullscreen(); } };
+  Flipbook.prototype.toggleFullscreen = function(){ if (this.isFullscreen()) this.exitFullscreen(); else this.enterFullscreen(); };
+  Flipbook.prototype.initToolbar = function(){ if (!this.els.toolbar) return; this.els.toolbar.classList.add('hidden'); if (this.els.toolbarHint) { this.els.toolbarHint.classList.remove('hidden'); this.els.toolbarHint.addEventListener('click', () => this.showToolbar()); }
+    const isCoarse = () => (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+    const showIfAppropriate = (e) => { if (!isCoarse()) return; const t = e && e.target; if (t && (t.closest && (t.closest('.flipbook-fullscreen') || t.closest('.flipbook-toolbar') || t.closest('.flipbook-toolbar-hint')))) return; this.showToolbar(); };
+    this.els.root.addEventListener('touchstart', showIfAppropriate, { passive: true });
+    this.els.root.addEventListener('pointerdown', showIfAppropriate);
+    this.els.root.addEventListener('mousemove', showIfAppropriate);
+  };
+  Flipbook.prototype.showToolbar = function(){ if (!this.els.toolbar) return; this.els.toolbar.classList.remove('hidden'); if (this.els.toolbarHint) this.els.toolbarHint.classList.add('hidden'); if (this._tbTo) clearTimeout(this._tbTo); this._tbTo = setTimeout(() => { this.hideToolbar(); }, 2200); };
+  Flipbook.prototype.hideToolbar = function(){ if (!this.els.toolbar) return; this.els.toolbar.classList.add('hidden'); if (this.els.toolbarHint) this.els.toolbarHint.classList.remove('hidden'); };
 
   window.Flipbook = {
     mount: function(opts){
