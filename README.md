@@ -7,16 +7,17 @@ Vanilla JS flipbook viewer for PDFs (powered by pdf.js). It supports a single-pa
 - Two-page spreads after the cover
 - Hover arrows for next/prev (hidden when unavailable)
 - Click-to-navigate: click left/right page half for prev/next
-- Fullscreen control (button + API)
+- Fullscreen control (button + API), with iOS fallback fullscreen
 - Responsive single-page mode on small screens (configurable breakpoint, overrideable)
+- Mobile UX: swipe navigation, auto-hiding bottom toolbar with page indicator, bottom hint when hidden
 - Auto-loads pdf.js from CDN if it’s not present
 - No frameworks, just HTML/CSS/JS
 
 ### Quick start (CDN)
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/SpotTune/pdf-js-flipbook@v1.1.2/dist/flipbook.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/SpotTune/pdf-js-flipbook@v1.2.0/dist/flipbook.css">
 <div id="flip" style="height:100dvh"></div>
-<script src="https://cdn.jsdelivr.net/gh/SpotTune/pdf-js-flipbook@v1.1.2/dist/flipbook.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/SpotTune/pdf-js-flipbook@v1.2.0/dist/flipbook.js"></script>
 <script>
   const fb = Flipbook.mount({
     target: '#flip',
@@ -39,13 +40,13 @@ Vanilla JS flipbook viewer for PDFs (powered by pdf.js). It supports a single-pa
 ### Using your own pdf.js (optional)
 Flipbook.js auto-loads pdf.js 3.10.x from a CDN when `window.pdfjsLib` is not present. If you prefer to pin/control pdf.js yourself:
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/SpotTune/pdf-js-flipbook@v1.1.2/dist/flipbook.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/SpotTune/pdf-js-flipbook@v1.2.0/dist/flipbook.css">
 <div id="flip" style="height:100dvh"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.111/pdf.min.js"></script>
 <script>
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.10.111/pdf.worker.min.js';
 </script>
-<script src="https://cdn.jsdelivr.net/gh/SpotTune/pdf-js-flipbook@v1.1.2/dist/flipbook.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/SpotTune/pdf-js-flipbook@v1.2.0/dist/flipbook.js"></script>
 <script>
   Flipbook.mount({ target: '#flip', pdfUrl: 'https://example.com/file.pdf' });
 </script>
@@ -76,6 +77,11 @@ fb.exitFullscreen();
 fb.toggleFullscreen();
 ```
 
+### Mobile & iOS
+- Swipe left/right to navigate.
+- Bottom toolbar auto-hides after inactivity; a small bottom-center hint appears when hidden.
+- Fullscreen button is always accessible. On iOS, a fixed-position fallback is used when native fullscreen isn’t available, respecting safe-area insets.
+
 Notes:
 - To load a different PDF, mount a new instance with another container or rebuild the existing container.
 - The viewer auto-switches to cover mode on page 1 and to spreads afterwards.
@@ -89,8 +95,8 @@ Notes:
 
 ### CDN
 ```html
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/SpotTune/pdf-js-flipbook@v1.1.2/dist/flipbook.css">
-<script src="https://cdn.jsdelivr.net/gh/SpotTune/pdf-js-flipbook@v1.1.2/dist/flipbook.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/SpotTune/pdf-js-flipbook@v1.2.0/dist/flipbook.css">
+<script src="https://cdn.jsdelivr.net/gh/SpotTune/pdf-js-flipbook@v1.2.0/dist/flipbook.js"></script>
 ```
 
 ### License
